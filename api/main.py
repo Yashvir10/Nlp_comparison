@@ -1,40 +1,13 @@
-"""
-main.py
-Simple FastAPI app that loads your trained Transformer artifacts and
-serves sentiment predictions.
-
-Folder layout expected (put this file next to an `artifacts/` folder):
-
-    artifacts/
-    ├── transformer_classifier.keras
-    ├── bert_tokenizer/
-    └── bert_base/
-    main.py   <- this file
-
-Run:
-    pip install fastapi uvicorn tensorflow torch transformers
-    uvicorn main:app --reload
-
-Then open http://127.0.0.1:8000/docs to try it in the browser.
-"""
-
 from typing import List
-
 import torch
 from fastapi import FastAPI
 from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModel
 from tensorflow.keras.models import load_model
 
-# --------------------------------------------------------------------------
-# CONFIG -- must match what was used during training
-# --------------------------------------------------------------------------
 MAX_LEN = 128
 ARTIFACTS_DIR = "transformer_artifacts_fixed"
 
-# --------------------------------------------------------------------------
-# Load everything ONCE at startup -- not per-request, which would be slow
-# --------------------------------------------------------------------------
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 print("Loading tokenizer...")
@@ -49,16 +22,12 @@ print("Loading Keras classifier...")
 classifier = load_model(f"{ARTIFACTS_DIR}/transformer_classifier.keras")
 
 print(f"All models loaded. Running on: {device}")
-
-# --------------------------------------------------------------------------
-# FastAPI app
-# --------------------------------------------------------------------------
 app = FastAPI(title="IMDB Sentiment API")
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # fine for local testing; restrict this in production
+    allow_origins=["*"],   
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -68,8 +37,8 @@ class ReviewRequest(BaseModel):
 
 
 class SentimentResponse(BaseModel):
-    sentiment: str       # "positive" or "negative"
-    confidence: float    # 0.0 - 1.0
+    sentiment: str       
+    confidence: float    
 
 
 class BatchReviewRequest(BaseModel):
@@ -81,7 +50,7 @@ class BatchSentimentResponse(BaseModel):
 
 
 def predict_sentiment(text: str):
-    # Step 1: text -> tokens -> DistilBERT embedding (same as training)
+    
     with torch.no_grad():
         encoded = tokenizer(
             [text], padding=True, truncation=True,
@@ -90,7 +59,7 @@ def predict_sentiment(text: str):
         output = bert_model(**encoded)
         cls_embedding = output.last_hidden_state[:, 0, :].cpu().numpy()
 
-    # Step 2: embedding -> Keras classifier -> probability
+    
     prob = float(classifier.predict(cls_embedding, verbose=0)[0][0])
     label = "positive" if prob > 0.5 else "negative"
     confidence = prob if label == "positive" else 1 - prob
