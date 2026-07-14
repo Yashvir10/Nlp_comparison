@@ -1,15 +1,3 @@
-"""
-streamlit_app.py
-Simple Streamlit frontend to test the FastAPI sentiment API.
-
-Run:
-    pip install streamlit requests
-    streamlit run streamlit_app.py
-
-Make sure your FastAPI server is already running separately:
-    python -m uvicorn main:app --reload
-"""
-
 import requests
 import streamlit as st
 
@@ -17,15 +5,9 @@ st.set_page_config(page_title="IMDB Sentiment API — Test Console", page_icon="
 
 st.title("🎬 IMDB Sentiment API")
 st.caption("Test console for the FastAPI /predict endpoint")
-
-# --------------------------------------------------------------------------
-# API URL
-# --------------------------------------------------------------------------
 api_url = st.text_input("API base URL", value="http://127.0.0.1:8000")
 
-# --------------------------------------------------------------------------
-# Example buttons -- fill the text box with one click
-# --------------------------------------------------------------------------
+
 if "review_text" not in st.session_state:
     st.session_state.review_text = (
         "This movie was an absolute masterpiece. The acting, the direction, "
@@ -48,9 +30,6 @@ with col2:
 
 review = st.text_area("Movie review", key="review_text", height=150)
 
-# --------------------------------------------------------------------------
-# Predict
-# --------------------------------------------------------------------------
 if st.button("Predict", type="primary"):
     if not review.strip():
         st.warning("Enter a review first.")
@@ -85,9 +64,6 @@ if st.button("Predict", type="primary"):
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
 
-# --------------------------------------------------------------------------
-# Batch prediction -- optional, uses the /predict/batch route
-# --------------------------------------------------------------------------
 with st.expander("Batch predict (multiple reviews at once)"):
     batch_text = st.text_area(
         "One review per line", height=150,
