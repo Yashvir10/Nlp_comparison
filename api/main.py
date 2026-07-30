@@ -1,10 +1,11 @@
 from typing import List
+
 import torch
 from fastapi import FastAPI
-from pydantic import BaseModel
-from transformers import AutoTokenizer, AutoModel
-from tensorflow.keras.models import load_model
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from tensorflow.keras.models import load_model
+from transformers import AutoModel, AutoTokenizer
 MAX_LEN = 128
 ARTIFACTS_DIR = "transformer_artifacts_fixed"
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -18,29 +19,25 @@ print("Loading Keras classifier...")
 classifier = load_model(f"{ARTIFACTS_DIR}/transformer_classifier.keras")
 print(f"All models loaded. Running on: {device}")
 app = FastAPI(title="IMDB Sentiment API")
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   
+    allow_origins=["*"], 
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 class ReviewRequest(BaseModel):
-
-    
     review: str
 
 
 class SentimentResponse(BaseModel):
-
-    
     sentiment: str       
     confidence: float    
 
 
 class BatchReviewRequest(BaseModel):
-
-    
     reviews: List[str]
 
 
@@ -49,7 +46,6 @@ class BatchSentimentResponse(BaseModel):
 
 
 def predict_sentiment(text: str):
-    
     with torch.no_grad():
         encoded = tokenizer(
             [text], padding=True, truncation=True,
@@ -67,8 +63,6 @@ def predict_sentiment(text: str):
 
 
 @app.get("/")
-
-
 def root():
     """Landing route -- quick sanity check + pointer to the docs."""
     return {
@@ -79,15 +73,11 @@ def root():
 
 
 @app.get("/health")
-
-
 def health():
     return {"status": "ok", "device": device}
 
 
 @app.get("/model-info")
-
-
 def model_info():
     """Basic details about what's actually being served -- useful for
     your report/viva to show exactly which model/config is live."""
@@ -101,16 +91,12 @@ def model_info():
 
 
 @app.post("/predict", response_model=SentimentResponse)
-
-
 def predict(request: ReviewRequest):
     sentiment, confidence = predict_sentiment(request.review)
     return SentimentResponse(sentiment=sentiment, confidence=confidence)
 
 
 @app.post("/predict/batch", response_model=BatchSentimentResponse)
-
-
 def predict_batch(request: BatchReviewRequest):
     """Predict sentiment for multiple reviews in one call, instead of
     sending them one at a time."""
