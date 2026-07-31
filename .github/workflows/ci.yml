@@ -1,4 +1,3 @@
-imple · YML
 name: Python CI
  
 on: [push, pull_request]
