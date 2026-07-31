@@ -1,4 +1,5 @@
 from typing import List
+import os
 import torch
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,11 +20,29 @@ classifier = load_model(f"{ARTIFACTS_DIR}/transformer_classifier.keras")
 print(f"All models loaded. Running on: {device}")
 app = FastAPI(title="IMDB Sentiment API")
 
+# Configure CORS safely using environment variables.
+# - ALLOWED_ORIGINS: comma-separated list of allowed origins (e.g. "https://app.example.com,http://localhost:3000").
+#   Use "*" only in development if you truly need it; production should list explicit origins.
+# - ALLOW_CREDENTIALS: "true"/"1"/"yes" to enable credentials. Defaults to false.
+# Notes: Per the CORS spec, allow_credentials cannot be true when allow_origins is ["*"].
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").strip()
+if allowed_origins_env == "*":
+    allowed_origins = ["*"]
+else:
+    allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+
+allow_credentials = os.getenv("ALLOW_CREDENTIALS", "false").lower() in ("1", "true", "yes")
+# Prevent an invalid configuration: credentials cannot be allowed with wildcard origins.
+if allowed_origins == ["*"] and allow_credentials:
+    print("WARNING: ALLOW_CREDENTIALS was true but ALLOWED_ORIGINS is '*'. Disabling credentials to comply with CORS spec.")
+    allow_credentials = False
+
+print(f"CORS configured. allowed_origins={allowed_origins}, allow_credentials={allow_credentials}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=allowed_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
